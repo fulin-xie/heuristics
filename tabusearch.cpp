@@ -18,8 +18,8 @@ double TabuSearch::epsilon = 0.00001;
 TabuSearch::TabuSearch()
 {
     //this->FilePath = "/Users/fulin/Documents/PhD/C++/OVRPTW/Instances2.txt";
-    //this->FilePath = "/Users/fulin/Documents/PhD/C++/OVRPTW/InstancesR106.txt";
-    this->FilePath = "C:/C++/TabuSearch/OVRPTW/InstancesR106.txt";
+    this->FilePath = "/Users/fulin/Documents/PhD/C++/OVRPTW/InstancesR106.txt";
+    //this->FilePath = "C:/C++/TabuSearch/OVRPTW/InstancesR106.txt";
     //configurations
     this->VehicleCount = 12;
     this->MaxIterNum = 1000; // maximum number of iterations
@@ -341,17 +341,17 @@ void TabuSearch::UpdateTabuList(NeighborSolution& BestNeighborSolution)
     for(int i=0; i<CustomerCount; ++i){
         for(int j=0; j<VehicleCount; ++j){
             // the removed customer cannot be reinserted into the path in 15 steps
-            if(i==CustomerOneId && j==PathOneId){
-                attribute[i][j].SetTabuStatus(TabuMemoryLength);
-            }
-            else if((CustomerTwoId != -1)&&(i==CustomerTwoId)&&(j==PathTwoId)){
-                attribute[i][j].SetTabuStatus(TabuMemoryLength);
-            }
-            else if(attribute[i][j].TabuStatus() > 0){
+            if(attribute[i][j].TabuStatus() > 0){
                 attribute[i][j].SetTabuStatus(attribute[i][j].TabuStatus()-1);
             }
         }
     }
+
+    attribute[CustomerOneId][PathOneId].SetTabuStatus(TabuMemoryLength);
+    if(CustomerTwoId != -1){
+        attribute[CustomerTwoId][PathTwoId].SetTabuStatus(TabuMemoryLength);
+    }
+
 }
 
 

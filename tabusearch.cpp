@@ -19,9 +19,9 @@ TabuSearch::TabuSearch()
 {
     //this->FilePath = "/Users/fulin/Documents/PhD/C++/OVRPTW/Instances2.txt";
     //this->FilePath = "/Users/fulin/Documents/PhD/C++/OVRPTW/InstancesR106.txt";
-    this->FilePath = "C:/C++/TabuSearch/OVRPTW/InstancesR104.txt";
+    this->FilePath = "C:/C++/TabuSearch/OVRPTW/InstancesR106.txt";
     //configurations
-    this->VehicleCount = 9;
+    this->VehicleCount = 12;
     this->MaxIterNum = 1000; // maximum number of iterations
     this->MaxConsIterNum = 500000; // maximum number of consecutive iterations without improvement to the best solution
     this->TabuMemoryLength = 15;
@@ -108,7 +108,7 @@ void TabuSearch::RunTabuSearch(int MaxIterNum)
         //generate all neighbor solutions
         IterNum = IterNum + 1;
         if(IterNumNoImprove >= 100){
-            ++ LocalSearchRule; // use another local search rule
+         //   ++ LocalSearchRule; // use another local search rule
             IterNumNoImprove = 0; //reset the count to 0
             if(LocalSearchRule > 3){ //reset to the rule one
                 LocalSearchRule = 1;
@@ -396,7 +396,7 @@ void TabuSearch::GetInitialSolution()
 {
     srand(time(0));
     //int i = rand() % 100; //generate a random number in the rand 0 and 99, it determines the first selected customer
-    int i = 6;
+    int i = 38;
     RandomNum = i;
     int NumOfInsertion = 0; // the number of customers have been inserted to vehicles' route
     int PathCount = 0;

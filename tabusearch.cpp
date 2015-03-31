@@ -22,7 +22,7 @@ TabuSearch::TabuSearch()
     this->FilePath = "C:/C++/VRPTW//heuristics/InstancesR106.txt";
     //configurations
     this->VehicleCount = 12;
-    this->MaxIterNum = 1000; // maximum number of iterations
+    this->MaxIterNum = 100000; // maximum number of iterations
     this->MaxConsIterNum = 500000; // maximum number of consecutive iterations without improvement to the best solution
     this->TabuMemoryLength = 15;
     this->delta = 0.5; // factor used to modify the three parameters above
@@ -126,6 +126,7 @@ void TabuSearch::RunTabuSearch(int MaxIterNum)
         GetAllNeighborSolutions(CurrentSolution); // call the local search function to get neighborhood solutions
         NeighborSolution BestNeighborSolution = BestNeighbor(LocalSearch::AllNeighbors, CurrentSolution);
         CurrentSolution = BestNeighborSolution;
+
         double NormalisedObjValue = BestNeighborSolution.TotalViolation()
                                                             + BestNeighborSolution.TotalDriveDistance();
         if((BestObjectiveValue-NormalisedObjValue) > epsilon ){
@@ -148,7 +149,7 @@ void TabuSearch::RunTabuSearch(int MaxIterNum)
         SolutionList.push_back(CurrentSolution);
 
         //pause the loop, until the user clicks the enter
-        if((IterNum % 100000) == 0){
+        if((IterNum % 1000000) == 0){
             if(FeasibleSolutionFound==true){FeasibleSolution.DisplaySolution();}
             cout << "Best normalized objective value: " << BestObjectiveValue << endl;
             cout << "Random Number" << RandomNum << endl;
@@ -178,7 +179,7 @@ double TabuSearch::GetPenalty(double cost, int MoveFrequency)
     double Penalty = 0;
 
     Penalty = lambda*cost*ScalingFactor*MoveFrequency/IterNum;
-    int num = IterNum;
+    //int num = IterNum;
     return Penalty;
 }
 
@@ -222,9 +223,11 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
 
                 double TotalObjValue = NeighborSolutions[i].ObjectiveValue()
                     + GetPenalty(TotalDriveDistance, NeighborFrequency);
+
                 if((MinObjValue-TotalObjValue)>epsilon){
                     BestNeighborSolution = NeighborSolutions[i];
-                    MinObjValue = BestNeighborSolution.ObjectiveValue();
+                    //MinObjValue = TotalObjValue;
+                    MinObjValue = TotalObjValue;
                     BestSolutionPosition = i;
                 }
             }
@@ -361,7 +364,7 @@ void TabuSearch::UpdateTabuList(NeighborSolution& BestNeighborSolution)
 void TabuSearch :: UpdateParameters(Solution& CurrentSolution)
 {
     if(CurrentSolution.TotalCapacityViolation() > 0){
-        if(this->alpha < 200){
+        if(this->alpha < 2000){
             this->alpha = this->alpha * (1+delta); // set an upper bound
         }
     }
@@ -372,7 +375,7 @@ void TabuSearch :: UpdateParameters(Solution& CurrentSolution)
     }
 
     if(CurrentSolution.TotalDurationViolation() > 0){
-        if(this->beta < 200){
+        if(this->beta < 2000){
             this->beta = this->beta * (1+delta);
         }
     }
@@ -383,7 +386,7 @@ void TabuSearch :: UpdateParameters(Solution& CurrentSolution)
     }
 
     if(CurrentSolution.TotalTimeWindowViolation() > 0){
-        if(this->gamma < 200){
+        if(this->gamma < 2000){
             this->gamma = this->gamma * (1+delta);
         }
     }
@@ -399,7 +402,7 @@ void TabuSearch::GetInitialSolution()
 {
     srand(time(0));
     //int i = rand() % 100; //generate a random number in the rand 0 and 99, it determines the first selected customer
-    int i = 38;
+    int i = 20;
     RandomNum = i;
     int NumOfInsertion = 0; // the number of customers have been inserted to vehicles' route
     int PathCount = 0;
@@ -489,6 +492,7 @@ void TabuSearch::GetInitialSolution()
     }
     cout <<" Path Count:  " << PathsInNewSolution.size() << endl;
     Solution NewSolution(PathsInNewSolution, false);
+    NewSolution.GetObjectiveValue(alpha, beta, gamma);
     SolutionList.push_back(NewSolution); // store the solution into the solution list
 }
 

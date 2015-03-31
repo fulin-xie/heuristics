@@ -133,8 +133,8 @@ void LocalSearch::relocate(Solution CurrentSolution,Depot DepotStart, double Bes
                     double TimeWindowViolation = TemSolution.TotalTimeWindowViolation()
                             + NewPathIn.TimeWindowViolation() + NewPathOut.TimeWindowViolation();
 
-                    TemPathList.push_back(NewPathIn);
                     TemPathList.push_back(NewPathOut);
+                    TemPathList.push_back(NewPathIn);
                     list<Path>::iterator it = TemPathList.end();
                     --it;
                     NewPathList.push_back(& *it);

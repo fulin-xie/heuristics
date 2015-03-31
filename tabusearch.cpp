@@ -41,6 +41,7 @@ TabuSearch::TabuSearch()
     this->ComputationTimeInMinute = 0;
     this->CurrentFrequency = 0;
     this->ConsIterNum = 0; //current number of consecutive iterations without any improvement
+    this->ScalingFactor = 0;
 }
 
 void TabuSearch::RunModel()
@@ -100,6 +101,8 @@ bool TabuSearch::CheckFeasibility(Solution& solution)
 
 void TabuSearch::RunTabuSearch(int MaxIterNum)
 {
+    this->ScalingFactor = sqrt(CustomerCount*VehicleCount);
+
     Solution CurrentSolution = SolutionList[0];
 
     int IterNumNoImprove = 0;
@@ -145,7 +148,7 @@ void TabuSearch::RunTabuSearch(int MaxIterNum)
         SolutionList.push_back(CurrentSolution);
 
         //pause the loop, until the user clicks the enter
-        if((IterNum % 10000) == 0){
+        if((IterNum % 100000) == 0){
             if(FeasibleSolutionFound==true){FeasibleSolution.DisplaySolution();}
             cout << "Best normalized objective value: " << BestObjectiveValue << endl;
             cout << "Random Number" << RandomNum << endl;
@@ -173,11 +176,9 @@ void TabuSearch::GetAllNeighborSolutions(Solution& CurrentSolution)
 double TabuSearch::GetPenalty(double cost, int MoveFrequency)
 {
     double Penalty = 0;
-    double ScalingFactor = 0;
 
-    ScalingFactor = sqrt(CustomerCount*VehicleCount);
-    Penalty = lambda*cost*ScalingFactor*MoveFrequency;
-
+    Penalty = lambda*cost*ScalingFactor*MoveFrequency/IterNum;
+    int num = IterNum;
     return Penalty;
 }
 
@@ -291,7 +292,9 @@ bool TabuSearch::AcceptNeighbor(NeighborSolution& BestNeighborSolution)
         int CustomerTwoId = BestNeighborSolution.CustomerTwoId();
         // check if the solution is on the tabu list
         if(CustomerTwoId == -1){ // means no customer is swaped into path one, relocate operator
-            if(attribute[CustomerOneId][PathTwoId].TabuStatus() > 0){accept = false;}
+            if(attribute[CustomerOneId][PathTwoId].TabuStatus() > 0){
+                accept = false;
+            }
             else{accept = true;}
         }
         else{ // means the swap operator

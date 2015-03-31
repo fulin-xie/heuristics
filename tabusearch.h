@@ -14,6 +14,7 @@ private:
     int TabuMemoryLength;
     int LocalSearchRule; // the rule 1 is relocate, rule 2 is the swap, rule 3 is the cross exchange
     double alpha, beta, gamma; //3 parameters in the objective function
+    double ScalingFactor; // the factor used in the diversity strategy
     double delta; // factor used to modify the three parameters in the obj function
     double lambda; // the factor used to contol the intensity of the diversification
     double BestObjectiveValue; // the objective value of the best solution identified so far, this value used for apiration criterion, the calculation of objective value is the sum of travel distance and violation

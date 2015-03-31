@@ -73,7 +73,7 @@ void LocalSearch::relocate(Solution CurrentSolution,Depot DepotStart, double Bes
                     else{
                         //determine the insert position, possible paths
                         Path* PossiblePath = new Path[CustomerListOfPathIn.size()+1];
-                        for(int n=0; n<=(int)CustomerListOfPathIn.size(); n++ ){
+                        for(int n=0; n<(int)CustomerListOfPathIn.size()+1; n++ ){
                             vector<Customer> NewCustomersList = CustomerListOfPathIn;
 
                             double NewDriveDistance2, NewLoad2;
@@ -109,8 +109,13 @@ void LocalSearch::relocate(Solution CurrentSolution,Depot DepotStart, double Bes
 
                         double MinObjValue = 100000000000; //the path with the min objective value
                         int PathWithMinObjValue;
-                        for(int n=0; n<=(int)CustomerListOfPathIn.size(); n++){
+                        for(int n=0; n<(int)CustomerListOfPathIn.size()+1; n++){
                             PossiblePath[n].GetObjectiveValue(alpha, beta, gamma);
+                            /* display information of possible paths
+                            Path pathcopy = PossiblePath[n];
+                            pathcopy.DisplayInfo();
+                            std::cout << "Objective value:  " << pathcopy.ObjectiveValue()<<std::endl;
+                            */
                             if((MinObjValue-PossiblePath[n].ObjectiveValue()) > epsilon ){
                                 MinObjValue = PossiblePath[n].ObjectiveValue();
                                 PathWithMinObjValue = n;

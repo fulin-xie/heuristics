@@ -22,7 +22,7 @@ TabuSearch::TabuSearch()
     this->FilePath = "C:/C++/VRPTW//heuristics/InstancesR106.txt";
     //configurations
     this->VehicleCount = 12;
-    this->MaxIterNum = 100000; // maximum number of iterations
+    this->MaxIterNum = 50000; // maximum number of iterations
     this->MaxConsIterNum = 500000; // maximum number of consecutive iterations without improvement to the best solution
     this->TabuMemoryLength = 15;
     this->delta = 0.5; // factor used to modify the three parameters above
@@ -46,7 +46,6 @@ TabuSearch::TabuSearch()
 
 void TabuSearch::RunModel()
 {
-
     DataInitialization(this->FilePath);
     //VerifyDistanceCal();
     double MinuteInSecond = 60;
@@ -89,6 +88,24 @@ void TabuSearch::DisplaySolution()
 }
 
 
+void TabuSearch::DisplayNeighborSolution(std::vector<NeighborSolution> &NeighborSolutions)
+{
+    int size = NeighborSolutions.size();
+
+    SolutionList[SolutionList.size()-1].DisplaySolution();
+
+    for(int i=0; i<100; i++){
+        NeighborSolution solution =  NeighborSolutions[i];
+        cout << solution.CustomerOneId() << " && " << solution.PathOneId() << " && " << solution.PathTwoId();
+        vector<Path*> pathlist;
+        pathlist = solution.PathList();
+        Path NewPathIn = * pathlist[pathlist.size()-2];
+        NewPathIn.DisplayInfo();
+
+      //  solution.DisplaySolution();
+    }
+}
+
 bool TabuSearch::CheckFeasibility(Solution& solution)
 {
     bool feasible = false;
@@ -125,6 +142,7 @@ void TabuSearch::RunTabuSearch(int MaxIterNum)
 
         GetAllNeighborSolutions(CurrentSolution); // call the local search function to get neighborhood solutions
         NeighborSolution BestNeighborSolution = BestNeighbor(LocalSearch::AllNeighbors, CurrentSolution);
+        //DisplayNeighborSolution(LocalSearch::AllNeighbors);
         CurrentSolution = BestNeighborSolution;
 
         double NormalisedObjValue = BestNeighborSolution.TotalViolation()
@@ -149,7 +167,7 @@ void TabuSearch::RunTabuSearch(int MaxIterNum)
         SolutionList.push_back(CurrentSolution);
 
         //pause the loop, until the user clicks the enter
-        if((IterNum % 1000000) == 0){
+        if((IterNum % 10000) == 0){
             if(FeasibleSolutionFound==true){FeasibleSolution.DisplaySolution();}
             cout << "Best normalized objective value: " << BestObjectiveValue << endl;
             cout << "Random Number" << RandomNum << endl;
@@ -178,7 +196,7 @@ double TabuSearch::GetPenalty(double cost, int MoveFrequency)
 {
     double Penalty = 0;
 
-    Penalty = lambda*cost*ScalingFactor*MoveFrequency/IterNum;
+    Penalty = lambda*cost*ScalingFactor*MoveFrequency;
     //int num = IterNum;
     return Penalty;
 }
@@ -207,6 +225,15 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
             goto TailExchange;
         }
 
+        //information of best solution before diversification
+        double objectivevalue1 = BestNeighborSolution.ObjectiveValue();
+        int CustomerOneId1 = BestNeighborSolution.CustomerOneId();
+        int PathOneId1 = BestNeighborSolution.PathOneId();
+        int PathTwoId1 = BestNeighborSolution.PathTwoId();
+        int CustomerTwoId1 = BestNeighborSolution.CustomerTwoId();
+        double objectiveValue0= CurrentSolution.ObjectiveValue();
+
+
         //diversification process; if the objective value of best neighbor solution is
         // higher than the current solution, then check the penalty, the objectice function is minimize
         if((BestNeighborSolution.ObjectiveValue()-CurrentSolution.ObjectiveValue()) > epsilon){
@@ -219,19 +246,39 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
                 PathTwoId = NeighborSolutions[i].PathTwoId();
                 PathOneId = NeighborSolutions[i].PathOneId();
 
-                int NeighborFrequency = GetFrequency(NeighborSolutions[i], false);
+                int NeighborFrequency = GetFrequency(NeighborSolutions[i], false)-1;
 
                 double TotalObjValue = NeighborSolutions[i].ObjectiveValue()
                     + GetPenalty(TotalDriveDistance, NeighborFrequency);
+                if(CustomerOneId == 51 && PathOneId == 0
+                        && PathTwoId == 10){
+                    double totalObj1 = TotalObjValue;
+                    int fre1= NeighborFrequency;
+                    totalObj1 = totalObj1;
+                    fre1 =fre1;
+                    double penalty = GetPenalty(TotalDriveDistance, NeighborFrequency);
+                    penalty = penalty;
+                }
+
+
+
 
                 if((MinObjValue-TotalObjValue)>epsilon){
                     BestNeighborSolution = NeighborSolutions[i];
-                    //MinObjValue = TotalObjValue;
-                    MinObjValue = TotalObjValue;
+                    //MinObjValue = BestNeighborSolution.ObjectiveValue();
+                    MinObjValue=TotalObjValue;
                     BestSolutionPosition = i;
                 }
             }
         }
+
+        //best solution after diversification
+        double objectivevalue2 = BestNeighborSolution.ObjectiveValue();
+        int CustomerOneId2 = BestNeighborSolution.CustomerOneId();
+        int PathOneId2 = BestNeighborSolution.PathOneId();
+        int PathTwoId2 = BestNeighborSolution.PathTwoId();
+        int CustomerTwoId2 = BestNeighborSolution.CustomerTwoId();
+
 
         //get the move indicators from the best neighbor solution
         CustomerOneId = BestNeighborSolution.CustomerOneId();
@@ -283,16 +330,21 @@ bool TabuSearch::AcceptNeighbor(NeighborSolution& BestNeighborSolution)
     //aspiration criterion
     double NormalisedObjValue = BestNeighborSolution.TotalViolation()
                                 + BestNeighborSolution.TotalDriveDistance();
+    double cost = BestNeighborSolution.TotalDriveDistance();
+    int CustomerOneId = BestNeighborSolution.CustomerOneId();
+    int PathOneId = BestNeighborSolution.PathOneId();
+    int PathTwoId = BestNeighborSolution.PathTwoId();
+    int CustomerTwoId = BestNeighborSolution.CustomerTwoId();
 
     // if the new neighbor has a small objective value than the best objective valuse found so far
-    if((BestObjectiveValue-NormalisedObjValue) > epsilon) {
+    //if((BestObjectiveValue-NormalisedObjValue) > epsilon) {
+    double num = attribute[CustomerOneId][PathTwoId].AspirationLevel();
+    if(attribute[CustomerOneId][PathTwoId].AspirationLevel() - cost > epsilon){ //aspiratioin criteria
+        attribute[CustomerOneId][PathTwoId].SetAspirationLevel(cost); // set the aspiration level
+        num = attribute[CustomerOneId][PathTwoId].AspirationLevel();
         accept = true;
     }
     else{
-        int CustomerOneId = BestNeighborSolution.CustomerOneId();
-        int PathOneId = BestNeighborSolution.PathOneId();
-        int PathTwoId = BestNeighborSolution.PathTwoId();
-        int CustomerTwoId = BestNeighborSolution.CustomerTwoId();
         // check if the solution is on the tabu list
         if(CustomerTwoId == -1){ // means no customer is swaped into path one, relocate operator
             if(attribute[CustomerOneId][PathTwoId].TabuStatus() > 0){
@@ -364,7 +416,7 @@ void TabuSearch::UpdateTabuList(NeighborSolution& BestNeighborSolution)
 void TabuSearch :: UpdateParameters(Solution& CurrentSolution)
 {
     if(CurrentSolution.TotalCapacityViolation() > 0){
-        if(this->alpha < 2000){
+        if(this->alpha < 200){
             this->alpha = this->alpha * (1+delta); // set an upper bound
         }
     }
@@ -375,7 +427,7 @@ void TabuSearch :: UpdateParameters(Solution& CurrentSolution)
     }
 
     if(CurrentSolution.TotalDurationViolation() > 0){
-        if(this->beta < 2000){
+        if(this->beta < 200){
             this->beta = this->beta * (1+delta);
         }
     }
@@ -386,7 +438,7 @@ void TabuSearch :: UpdateParameters(Solution& CurrentSolution)
     }
 
     if(CurrentSolution.TotalTimeWindowViolation() > 0){
-        if(this->gamma < 2000){
+        if(this->gamma < 200){
             this->gamma = this->gamma * (1+delta);
         }
     }
@@ -402,7 +454,7 @@ void TabuSearch::GetInitialSolution()
 {
     srand(time(0));
     //int i = rand() % 100; //generate a random number in the rand 0 and 99, it determines the first selected customer
-    int i = 20;
+    int i = 38;
     RandomNum = i;
     int NumOfInsertion = 0; // the number of customers have been inserted to vehicles' route
     int PathCount = 0;

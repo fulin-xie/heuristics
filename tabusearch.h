@@ -46,6 +46,7 @@ private:
     void GetAllNeighborSolutions(Solution& CurrentSolution); // generate all neighbor solutions of the current solution
 
     NeighborSolution BestNeighbor(std::vector<NeighborSolution>& NeighborSolutions, Solution CurrentSolution); // find the best neighbor solution from the list of neighborhoods
+    void DisplayNeighborSolution(std::vector<NeighborSolution>& NeighborSolutions);
     bool AcceptNeighbor(NeighborSolution& BestNeighborSolution);
     int GetFrequency(NeighborSolution& BestNeighborSolution, bool UpdateAttributeFrequency);
     void UpdateTabuList(NeighborSolution& BestNeighborSolution);

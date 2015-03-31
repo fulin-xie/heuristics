@@ -18,8 +18,8 @@ double TabuSearch::epsilon = 0.00001;
 TabuSearch::TabuSearch()
 {
     //this->FilePath = "/Users/fulin/Documents/PhD/C++/OVRPTW/Instances2.txt";
-    this->FilePath = "/Users/fulin/Documents/PhD/C++/OVRPTW/InstancesR106.txt";
-    //this->FilePath = "C:/C++/TabuSearch/OVRPTW/InstancesR106.txt";
+    //this->FilePath = "/Users/fulin/Documents/PhD/C++/OVRPTW/InstancesR106.txt";
+    this->FilePath = "C:/C++/VRPTW//heuristics/InstancesR106.txt";
     //configurations
     this->VehicleCount = 12;
     this->MaxIterNum = 1000; // maximum number of iterations

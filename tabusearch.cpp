@@ -18,8 +18,8 @@ double TabuSearch::epsilon = 0.00001;
 TabuSearch::TabuSearch()
 {
     //this->FilePath = "/Users/fulin/Documents/PhD/C++/OVRPTW/Instances2.txt";
-    //this->FilePath = "/Users/fulin/Documents/PhD/C++/OVRPTW/InstancesR106.txt";
-    this->FilePath = "C:/C++/VRPTW//heuristics/InstancesR106.txt";
+    this->FilePath = "/Users/fulin/Documents/PhD/C++/TabuSearch/heuristics//InstancesR106.txt";
+    //this->FilePath = "C:/C++/VRPTW//heuristics/InstancesR106.txt";
     //configurations
     this->VehicleCount = 12;
     this->MaxIterNum = 50000; // maximum number of iterations
@@ -246,7 +246,8 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
                 PathTwoId = NeighborSolutions[i].PathTwoId();
                 PathOneId = NeighborSolutions[i].PathOneId();
 
-                int NeighborFrequency = GetFrequency(NeighborSolutions[i], false)-1;
+                int NeighborFrequency = GetFrequency(NeighborSolutions[i], false);
+                //int NeighborFrequency = attribute[CustomerOneId][PathTwoId].VisitedTimes();
 
                 double TotalObjValue = NeighborSolutions[i].ObjectiveValue()
                     + GetPenalty(TotalDriveDistance, NeighborFrequency);
@@ -416,7 +417,7 @@ void TabuSearch::UpdateTabuList(NeighborSolution& BestNeighborSolution)
 void TabuSearch :: UpdateParameters(Solution& CurrentSolution)
 {
     if(CurrentSolution.TotalCapacityViolation() > 0){
-        if(this->alpha < 200){
+        if(this->alpha < 20000){
             this->alpha = this->alpha * (1+delta); // set an upper bound
         }
     }
@@ -427,7 +428,7 @@ void TabuSearch :: UpdateParameters(Solution& CurrentSolution)
     }
 
     if(CurrentSolution.TotalDurationViolation() > 0){
-        if(this->beta < 200){
+        if(this->beta < 20000){
             this->beta = this->beta * (1+delta);
         }
     }
@@ -438,7 +439,7 @@ void TabuSearch :: UpdateParameters(Solution& CurrentSolution)
     }
 
     if(CurrentSolution.TotalTimeWindowViolation() > 0){
-        if(this->gamma < 200){
+        if(this->gamma < 20000){
             this->gamma = this->gamma * (1+delta);
         }
     }
@@ -546,6 +547,21 @@ void TabuSearch::GetInitialSolution()
     Solution NewSolution(PathsInNewSolution, false);
     NewSolution.GetObjectiveValue(alpha, beta, gamma);
     SolutionList.push_back(NewSolution); // store the solution into the solution list
+    GetInitialAspirationLevel(NewSolution);
+}
+
+void TabuSearch::GetInitialAspirationLevel(Solution& solution)
+{
+    vector<Path* > PathList = solution.PathList();
+    double cost = solution.TotalDriveDistance();
+    for(int i=0; i<(int)PathList.size(); ++i){
+        Path path = *PathList[i];
+        vector<Customer> CustomerList = path.CustomersList();
+        for(int j=0; j<(int)CustomerList.size(); ++j){
+            attribute[j][i].SetAspirationLevel(cost);
+        }
+    }
+    PathList.clear();
 }
 
 bool TabuSearch::DurationConstraint(Customer &InsertCustomer, int InsertPosition,

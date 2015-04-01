@@ -57,6 +57,7 @@ private:
     double GetPenalty(double cost, int MoveFrequency); // the penalty is used for the diversification
     void CleanUp();
     void VerifyDistanceCal();
+    void GetInitialAspirationLevel(Solution& solution);
 
     void FindBestInitial();
 public:

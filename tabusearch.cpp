@@ -246,7 +246,7 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
                 PathTwoId = NeighborSolutions[i].PathTwoId();
                 PathOneId = NeighborSolutions[i].PathOneId();
 
-                int NeighborFrequency = GetFrequency(NeighborSolutions[i], false);
+                int NeighborFrequency = GetFrequency(NeighborSolutions[i], false)-1;
                 //int NeighborFrequency = attribute[CustomerOneId][PathTwoId].VisitedTimes();
 
                 double TotalObjValue = NeighborSolutions[i].ObjectiveValue()
@@ -559,6 +559,8 @@ void TabuSearch::GetInitialAspirationLevel(Solution& solution)
         vector<Customer> CustomerList = path.CustomersList();
         for(int j=0; j<(int)CustomerList.size(); ++j){
             attribute[j][i].SetAspirationLevel(cost);
+            // set the initial visited times
+            attribute[j][i].SetVisitedTimes(attribute[j][i].VisitedTimes()+1);
         }
     }
     PathList.clear();

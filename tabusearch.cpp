@@ -47,7 +47,8 @@ TabuSearch::TabuSearch()
 void TabuSearch::RunModel()
 {
     DataInitialization(this->FilePath);
-    //VerifyDistanceCal();
+    VerifyDistanceCal();
+    /*
     double MinuteInSecond = 60;
     int t0 = (int)time(NULL);
     SortCustomers();
@@ -61,6 +62,7 @@ void TabuSearch::RunModel()
     DisplaySolution();
     cout << "Random Number: " << RandomNum << endl;
     CleanUp(); // clean the memory
+    */
 }
 
 void TabuSearch::DisplaySolution()
@@ -94,14 +96,17 @@ void TabuSearch::DisplayNeighborSolution(std::vector<NeighborSolution> &Neighbor
 
     SolutionList[SolutionList.size()-1].DisplaySolution();
 
-    for(int i=0; i<100; i++){
+    for(int i=0; i<NeighborSolutions.size(); i++){
         NeighborSolution solution =  NeighborSolutions[i];
-        cout << solution.CustomerOneId() << " && " << solution.PathOneId() << " && " << solution.PathTwoId();
+        cout << solution.CustomerOneId() << " && " << solution.PathOneId() << " && " << solution.PathTwoId()
+             << "  Objective value:  " << solution.ObjectiveValue() << endl;
+
+        /*
         vector<Path*> pathlist;
         pathlist = solution.PathList();
         Path NewPathIn = * pathlist[pathlist.size()-2];
         NewPathIn.DisplayInfo();
-
+        */
       //  solution.DisplaySolution();
     }
 }
@@ -198,6 +203,7 @@ double TabuSearch::GetPenalty(double cost, int MoveFrequency)
 
     Penalty = lambda*cost*ScalingFactor*MoveFrequency;
     //int num = IterNum;
+    Penalty = Penalty;
     return Penalty;
 }
 
@@ -207,6 +213,7 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
     NeighborSolution BestNeighborSolution;
     int PathOneId, CustomerOneId, PathTwoId, CustomerTwoId;
     bool BestNonTabuNeighborFound = false;
+    double Penalty = 0;
 
     while(BestNonTabuNeighborFound == false){
         int BestSolutionPosition = 0;
@@ -246,19 +253,17 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
                 PathTwoId = NeighborSolutions[i].PathTwoId();
                 PathOneId = NeighborSolutions[i].PathOneId();
 
-                int NeighborFrequency = GetFrequency(NeighborSolutions[i], false)-1;
-                //int NeighborFrequency = attribute[CustomerOneId][PathTwoId].VisitedTimes();
+                //int NeighborFrequency = GetFrequency(NeighborSolutions[i], false)-1;
+                int NeighborFrequency = attribute[CustomerOneId][PathTwoId].VisitedTimes();
 
                 double TotalObjValue = NeighborSolutions[i].ObjectiveValue()
                     + GetPenalty(TotalDriveDistance, NeighborFrequency);
+                Penalty = GetPenalty(TotalDriveDistance, NeighborFrequency);
                 if(CustomerOneId == 51 && PathOneId == 0
                         && PathTwoId == 10){
                     double totalObj1 = TotalObjValue;
                     int fre1= NeighborFrequency;
                     totalObj1 = totalObj1;
-                    fre1 =fre1;
-                    double penalty = GetPenalty(TotalDriveDistance, NeighborFrequency);
-                    penalty = penalty;
                 }
 
 
@@ -301,7 +306,8 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
     CurrentFrequency = GetFrequency(BestNeighborSolution, true);
 
     cout << CustomerOneId << " && " << PathOneId << " && " << PathTwoId <<
-                        "  Iteration: " << IterNum << "  Frequency:  " << CurrentFrequency << endl;
+                        "  Iteration: " << IterNum << "  Frequency:  " << CurrentFrequency
+         << " Objective value: " << BestNeighborSolution.ObjectiveValue() << " Penalty : " << Penalty << endl;
     }
 TailExchange:
     Path PathOne = *BestNeighborSolution.PathList()[BestNeighborSolution.PathList().size()-1];
@@ -416,8 +422,8 @@ void TabuSearch::UpdateTabuList(NeighborSolution& BestNeighborSolution)
 
 void TabuSearch :: UpdateParameters(Solution& CurrentSolution)
 {
-    if(CurrentSolution.TotalCapacityViolation() > 0){
-        if(this->alpha < 20000){
+    if(CurrentSolution.TotalCapacityViolation() > epsilon){
+        if(this->alpha < 2000){
             this->alpha = this->alpha * (1+delta); // set an upper bound
         }
     }
@@ -427,8 +433,9 @@ void TabuSearch :: UpdateParameters(Solution& CurrentSolution)
         }
     }
 
-    if(CurrentSolution.TotalDurationViolation() > 0){
-        if(this->beta < 20000){
+    double TotalDurationViolation = CurrentSolution.TotalDurationViolation();
+    if(CurrentSolution.TotalDurationViolation() > epsilon){
+        if(this->beta < 2000){
             this->beta = this->beta * (1+delta);
         }
     }
@@ -438,8 +445,10 @@ void TabuSearch :: UpdateParameters(Solution& CurrentSolution)
         }
     }
 
-    if(CurrentSolution.TotalTimeWindowViolation() > 0){
-        if(this->gamma < 20000){
+    double TimewindowViolation = CurrentSolution.TotalTimeWindowViolation();
+
+    if(CurrentSolution.TotalTimeWindowViolation() > epsilon){
+        if(this->gamma < 2000){
             this->gamma = this->gamma * (1+delta);
         }
     }
@@ -712,11 +721,12 @@ void TabuSearch::VerifyDistanceCal()
     list<Path>::iterator it;
 
 
-    int CustomerId1[] = {42,43,15,87,57,41,22,74,73,21,26};
+    //int CustomerId1[] = {42,43,15,87,57,41,22,74,73,21,26};
     //int CustomerId1[] = {83,45,61,16,99,6,95,97,13};
-    //int CustomerId1[] = {42,14,38,86,84,5,60,89};
-    for(int i=0; i<11; i++){
+    int CustomerId1[] = {42,43,15};
+    for(int i=0; i<3; i++){
         Customer c = *CustomerMap[CustomerId1[i]-1];
+        cout << " X " << c.Xcoord() << "  Due date:  " <<  c.DueDate() << endl;
         CustomerList.push_back(c);
     }
     Path path1(*DepotStart, CustomerList);

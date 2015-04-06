@@ -18,6 +18,7 @@ private:
     double delta; // factor used to modify the three parameters in the obj function
     double lambda; // the factor used to contol the intensity of the diversification
     double BestObjectiveValue; // the objective value of the best solution identified so far, this value used for apiration criterion, the calculation of objective value is the sum of travel distance and violation
+    Solution BestSolution;
     double ComputationTimeInMinute, ComputationTimeInSecond;
     int NumOfNeighbors; // the number of neighbor solutions generated in each iteration
     Solution FeasibleSolution; // the best feasible solution found

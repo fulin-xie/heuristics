@@ -18,13 +18,13 @@ double TabuSearch::epsilon = 0.00001;
 TabuSearch::TabuSearch()
 {
     //this->FilePath = "/Users/fulin/Documents/PhD/C++/OVRPTW/Instances2.txt";
-    this->FilePath = "/Users/fulin/Documents/PhD/C++/TabuSearch/heuristics//InstancesR106.txt";
+    this->FilePath = "/Users/fulin/Documents/PhD/C++/TabuSearch/heuristics//InstancesR105.txt";
     //this->FilePath = "C:/C++/VRPTW//heuristics/InstancesR106.txt";
     //configurations
-    this->VehicleCount = 12;
+    this->VehicleCount = 14;
     this->MaxIterNum = 50000; // maximum number of iterations
     this->MaxConsIterNum = 500000; // maximum number of consecutive iterations without improvement to the best solution
-    this->TabuMemoryLength = 15;
+    this->TabuMemoryLength = 30;
     this->delta = 0.5; // factor used to modify the three parameters above
     this->lambda = 0.015; //factor used to control the intensity of the diversification
 
@@ -47,8 +47,7 @@ TabuSearch::TabuSearch()
 void TabuSearch::RunModel()
 {
     DataInitialization(this->FilePath);
-    VerifyDistanceCal();
-    /*
+    //VerifyDistanceCal();
     double MinuteInSecond = 60;
     int t0 = (int)time(NULL);
     SortCustomers();
@@ -62,7 +61,7 @@ void TabuSearch::RunModel()
     DisplaySolution();
     cout << "Random Number: " << RandomNum << endl;
     CleanUp(); // clean the memory
-    */
+
 }
 
 void TabuSearch::DisplaySolution()
@@ -126,36 +125,53 @@ void TabuSearch::RunTabuSearch(int MaxIterNum)
     this->ScalingFactor = sqrt(CustomerCount*VehicleCount);
 
     Solution CurrentSolution = SolutionList[0];
-
+    BestSolution = CurrentSolution;
     int IterNumNoImprove = 0;
 
     while((IterNum < MaxIterNum) && (ConsIterNum < MaxConsIterNum)){
         //generate all neighbor solutions
         IterNum = IterNum + 1;
+        srand(time(0));
+        TabuMemoryLength = rand() % 30; //generate a random number in the rand 0 and 99, it determines the first selected cust
+
+        /*
         if(IterNumNoImprove >= 100){
-         //   ++ LocalSearchRule; // use another local search rule
+            ++ LocalSearchRule; // use another local search rule
             IterNumNoImprove = 0; //reset the count to 0
             if(LocalSearchRule > 3){ //reset to the rule one
                 LocalSearchRule = 1;
             }
         }
-        /*
-        else{
-            LocalSearchRule = 3;
+        */
+
+        if((IterNumNoImprove >= 100) && LocalSearchRule==3){
+            LocalSearchRule = 1;
             IterNumNoImprove = 0;
-        }*/
+        }
+        if(IterNumNoImprove >= 100){
+            ++ LocalSearchRule;
+            IterNumNoImprove = 0;
+            //CurrentSolution = BestSolution;
+        }
 
         GetAllNeighborSolutions(CurrentSolution); // call the local search function to get neighborhood solutions
         NeighborSolution BestNeighborSolution = BestNeighbor(LocalSearch::AllNeighbors, CurrentSolution);
-        //DisplayNeighborSolution(LocalSearch::AllNeighbors);
+       // DisplayNeighborSolution(LocalSearch::AllNeighbors);
         CurrentSolution = BestNeighborSolution;
 
         double NormalisedObjValue = BestNeighborSolution.TotalViolation()
-                                                            + BestNeighborSolution.TotalDriveDistance();
+                                                       + BestNeighborSolution.TotalDriveDistance();
+        /*
         if((BestObjectiveValue-NormalisedObjValue) > epsilon ){
             BestObjectiveValue = NormalisedObjValue;
             ConsIterNum = 0;
             IterNumNoImprove = 0;
+        } */
+        if((BestSolution.TotalDriveDistance() - BestNeighborSolution.TotalDriveDistance() > epsilon)
+                && (BestSolution.TotalViolation() - BestNeighborSolution.TotalViolation() > epsilon)){
+            ConsIterNum = 0;
+            IterNumNoImprove = 0;
+            BestSolution = BestNeighborSolution;
         }
         else{
             ConsIterNum = ConsIterNum + 1;
@@ -203,7 +219,7 @@ double TabuSearch::GetPenalty(double cost, int MoveFrequency)
 
     Penalty = lambda*cost*ScalingFactor*MoveFrequency;
     //int num = IterNum;
-    Penalty = Penalty;
+    //Penalty = 0;
     return Penalty;
 }
 
@@ -344,23 +360,26 @@ bool TabuSearch::AcceptNeighbor(NeighborSolution& BestNeighborSolution)
     int CustomerTwoId = BestNeighborSolution.CustomerTwoId();
 
     // if the new neighbor has a small objective value than the best objective valuse found so far
-    //if((BestObjectiveValue-NormalisedObjValue) > epsilon) {
-    double num = attribute[CustomerOneId][PathTwoId].AspirationLevel();
-    if(attribute[CustomerOneId][PathTwoId].AspirationLevel() - cost > epsilon){ //aspiratioin criteria
-        attribute[CustomerOneId][PathTwoId].SetAspirationLevel(cost); // set the aspiration level
-        num = attribute[CustomerOneId][PathTwoId].AspirationLevel();
-        accept = true;
-    }
-    else{
-        // check if the solution is on the tabu list
-        if(CustomerTwoId == -1){ // means no customer is swaped into path one, relocate operator
-            if(attribute[CustomerOneId][PathTwoId].TabuStatus() > 0){
-                accept = false;
-            }
+    // the relocate operator
+    if(CustomerTwoId == -1){
+        if(attribute[CustomerOneId][PathTwoId].AspirationLevel() - cost > epsilon){ //aspiratioin criteria
+            attribute[CustomerOneId][PathTwoId].SetAspirationLevel(cost); // set the aspiration level
+            accept = true;
+        }
+        else{ // check if it is tabu
+            if(attribute[CustomerOneId][PathTwoId].TabuStatus() > 0){accept = false;} // a tabu move
             else{accept = true;}
         }
-        else{ // means the swap operator
-            if((attribute[CustomerOneId][PathTwoId].TabuStatus()>0)|| //check the tabu status
+    }
+    else{ // the swap ooperator
+        if((attribute[CustomerOneId][PathTwoId].AspirationLevel() - cost > epsilon) &&
+                (attribute[CustomerTwoId][PathOneId].AspirationLevel() - cost > epsilon)){ //aspiratioin criteria
+            attribute[CustomerOneId][PathTwoId].SetAspirationLevel(cost); // set the aspiration level
+            attribute[CustomerTwoId][PathOneId].SetAspirationLevel(cost);
+            accept = true;
+        }
+        else{ // check if it is tabu, if one of them is tabu, then is a tabu neighborhood solution
+            if((attribute[CustomerOneId][PathTwoId].TabuStatus()>0) || //check the tabu status
                     (attribute[CustomerTwoId][PathOneId].TabuStatus()>0)){accept = false;}
             else{accept = true;}
         }
@@ -411,12 +430,10 @@ void TabuSearch::UpdateTabuList(NeighborSolution& BestNeighborSolution)
             }
         }
     }
-
     attribute[CustomerOneId][PathOneId].SetTabuStatus(TabuMemoryLength);
     if(CustomerTwoId != -1){
         attribute[CustomerTwoId][PathTwoId].SetTabuStatus(TabuMemoryLength);
     }
-
 }
 
 
@@ -464,7 +481,7 @@ void TabuSearch::GetInitialSolution()
 {
     srand(time(0));
     //int i = rand() % 100; //generate a random number in the rand 0 and 99, it determines the first selected customer
-    int i = 38;
+    int i = 20;
     RandomNum = i;
     int NumOfInsertion = 0; // the number of customers have been inserted to vehicles' route
     int PathCount = 0;

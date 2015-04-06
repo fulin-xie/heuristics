@@ -136,14 +136,16 @@ class NeighborSolution : public Solution
     //index of the moves, which shows how neighbor Solution is obtained from the current solution
     int PathOneId0;
     int CustomerOneId0;
+    int CustomerOneDescId0;
     int PathTwoId0;
     int CustomerTwoId0;
+    int CustomerTwoDescId0;
     bool FirstImprovedNeighbor0;
 
 public:
     NeighborSolution(std::vector<Path*> Paths, double TotalDistance, double CapacityViolation,
                      double DurationViolation, double TimeWindowViolation, int PathOneId,
-                     int CustomerOneId,int PathTwoId, int CustomerTwoId, bool IsNeighborSolution)
+                     int CustomerOneId, int PathTwoId, int CustomerTwoId, bool IsNeighborSolution)
                      : Solution(Paths, IsNeighborSolution){
 
         this->TotalDriveDistance0 = TotalDistance;
@@ -156,22 +158,26 @@ public:
         this->CustomerTwoId0 = CustomerTwoId;
     }
 
-    NeighborSolution(std::vector<Path*> Paths, int PathOneId, int CustomerOneId,
-                     int PathTwoId, int CustomerTwoId, bool IsNeighborSolution)
-                     : Solution(Paths, IsNeighborSolution){
-
+    NeighborSolution(std::vector<Path*> Paths, int PathOneId, int CustomerOneId, int CustomerOneDescId,
+                     int PathTwoId, int CustomerTwoId, int CustomerTwoDescId ,bool IsNeighborSolution)
+                        : Solution(Paths, IsNeighborSolution){
         this->PathOneId0 = PathOneId;
         this->CustomerOneId0 = CustomerOneId;
+        this->CustomerOneDescId0 = CustomerOneDescId;
         this->PathTwoId0 = PathTwoId;
         this->CustomerTwoId0 = CustomerTwoId;
+        this->CustomerTwoDescId0 = CustomerTwoDescId;
     }
 
-    NeighborSolution(): Solution(), PathOneId0(0), CustomerOneId0(0),PathTwoId0(0), CustomerTwoId0(0), FirstImprovedNeighbor0(false){}
+    NeighborSolution(): Solution(), PathOneId0(0), CustomerOneId0(0), CustomerOneDescId0(0),
+        PathTwoId0(0), CustomerTwoId0(0), CustomerTwoDescId0(0) ,FirstImprovedNeighbor0(false){}
 
     int PathOneId(){return this->PathOneId0;}
     int CustomerOneId() {return this->CustomerOneId0;}
+    int CustomerOneDescId() {return this->CustomerOneDescId0;}
     int PathTwoId(){return this->PathTwoId0;}
     int CustomerTwoId(){return this->CustomerTwoId0;}
+    int CustomerTwoDescId() {return this->CustomerTwoDescId0;}
     void SetFirstImprovedNeighbor (bool FirstImprovedNeighbor) {this->FirstImprovedNeighbor0 = FirstImprovedNeighbor;}
     bool FirstImprovedNeighbor() {return this->FirstImprovedNeighbor0;}
 

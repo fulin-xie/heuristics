@@ -19,11 +19,11 @@ double TabuSearch::epsilon = 0.00001;
 TabuSearch::TabuSearch()
 {
     //this->FilePath = "/Users/fulin/Documents/PhD/C++/OVRPTW/Instances2.txt";
-    //this->FilePath = "/Users/fulin/Documents/PhD/C++/TabuSearch/heuristics//InstancesR106.txt";
-    this->FilePath = "C:/C++/VRPTW//heuristics/InstancesR101.txt";
+    this->FilePath = "/Users/fulin/Documents/PhD/C++/TabuSearch/heuristics//InstancesR101.txt";
+    //this->FilePath = "C:/C++/VRPTW//heuristics/InstancesR102.txt";
     //configurations
     this->VehicleCount = 19;
-    this->MaxIterNum = 1000; // maximum number of iterations
+    this->MaxIterNum = 50000; // maximum number of iterations
     this->MaxConsIterNum = 500000; // maximum number of consecutive iterations without improvement to the best solution
     this->TabuMemoryLength = 30;
     this->delta = 0.5; // factor used to modify the three parameters above
@@ -252,15 +252,6 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
             goto TailExchange;
         }
 
-        //information of best solution before diversification
-        double objectivevalue1 = BestNeighborSolution.ObjectiveValue();
-        int CustomerOneId1 = BestNeighborSolution.CustomerOneId();
-        int PathOneId1 = BestNeighborSolution.PathOneId();
-        int PathTwoId1 = BestNeighborSolution.PathTwoId();
-        int CustomerTwoId1 = BestNeighborSolution.CustomerTwoId();
-        double objectiveValue0= CurrentSolution.ObjectiveValue();
-
-
         //diversification process; if the objective value of best neighbor solution is
         // higher than the current solution, then check the penalty, the objectice function is minimize
         if((BestNeighborSolution.ObjectiveValue()-CurrentSolution.ObjectiveValue()) > epsilon){
@@ -294,14 +285,6 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
                 }
             }
         }
-
-        //best solution after diversification
-        double objectivevalue2 = BestNeighborSolution.ObjectiveValue();
-        int CustomerOneId2 = BestNeighborSolution.CustomerOneId();
-        int PathOneId2 = BestNeighborSolution.PathOneId();
-        int PathTwoId2 = BestNeighborSolution.PathTwoId();
-        int CustomerTwoId2 = BestNeighborSolution.CustomerTwoId();
-
 
         //get the move indicators from the best neighbor solution
         CustomerOneId = BestNeighborSolution.CustomerOneId();
@@ -352,18 +335,19 @@ TailExchange:
 bool TabuSearch::AcceptNeighbor(NeighborSolution& BestNeighborSolution)
 {
     bool accept = false;
-    //aspiration criterion
-    double NormalisedObjValue = BestNeighborSolution.TotalViolation()
-                                + BestNeighborSolution.TotalDriveDistance();
+
     double cost = BestNeighborSolution.TotalDriveDistance();
     int CustomerOneId = BestNeighborSolution.CustomerOneId();
+    int CustomerOneDescId = BestNeighborSolution.CustomerOneDescId();
     int PathOneId = BestNeighborSolution.PathOneId();
     int PathTwoId = BestNeighborSolution.PathTwoId();
     int CustomerTwoId = BestNeighborSolution.CustomerTwoId();
+    int CustomerTwoDescId = BestNeighborSolution.CustomerTwoDescId();
 
     // if the new neighbor has a small objective value than the best objective valuse found so far
     // the relocate operator
-    if(CustomerTwoId == -1){
+    switch (LocalSearchRule){
+    case 1:// the relocate operator
         if(attribute[CustomerOneId][PathTwoId].AspirationLevel() - cost > epsilon){ //aspiratioin criteria
             attribute[CustomerOneId][PathTwoId].SetAspirationLevel(cost); // set the aspiration level
             accept = true;
@@ -372,8 +356,8 @@ bool TabuSearch::AcceptNeighbor(NeighborSolution& BestNeighborSolution)
             if(attribute[CustomerOneId][PathTwoId].TabuStatus() > 0){accept = false;} // a tabu move
             else{accept = true;}
         }
-    }
-    else{ // the swap ooperator
+        break;
+    case 2: // the swap operator
         if((attribute[CustomerOneId][PathTwoId].AspirationLevel() - cost > epsilon) &&
                 (attribute[CustomerTwoId][PathOneId].AspirationLevel() - cost > epsilon)){ //aspiratioin criteria
             attribute[CustomerOneId][PathTwoId].SetAspirationLevel(cost); // set the aspiration level
@@ -382,10 +366,19 @@ bool TabuSearch::AcceptNeighbor(NeighborSolution& BestNeighborSolution)
         }
         else{ // check if it is tabu, if one of them is tabu, then is a tabu neighborhood solution
             if((attribute[CustomerOneId][PathTwoId].TabuStatus()>0) || //check the tabu status
-                    (attribute[CustomerTwoId][PathOneId].TabuStatus()>0)){accept = false;}
+                    (attribute[CustomerTwoId][PathOneId].TabuStatus()>0)) {accept = false;}
             else{accept = true;}
         }
+        break;
+    case 3: //the 2opt operator
+        if((ArcAttribute[CustomerOneId][CustomerOneDescId].TabuStatus()>0) ||
+                (ArcAttribute[CustomerTwoId][CustomerTwoDescId].TabuStatus()>0)) {accept = false;}
+        else {accept = true;}
+        break;
+    default:
+        cout << "no valid neighborhood operator found.";
     }
+
     return accept;
 }
 
@@ -419,9 +412,11 @@ int TabuSearch::GetFrequency(NeighborSolution& BestNeighborSolution, bool Update
 void TabuSearch::UpdateTabuList(NeighborSolution& BestNeighborSolution)
 {
     int CustomerOneId = BestNeighborSolution.CustomerOneId();
+    int CustomerOneDescId = BestNeighborSolution.CustomerOneDescId();
     int PathOneId = BestNeighborSolution.PathOneId();
     int PathTwoId = BestNeighborSolution.PathTwoId();
     int CustomerTwoId = BestNeighborSolution.CustomerTwoId();
+    int CustomerTwoDescId = BestNeighborSolution.CustomerTwoDescId();
 
     //update the tabu list
     for(int i=0; i<CustomerCount; ++i){
@@ -435,6 +430,19 @@ void TabuSearch::UpdateTabuList(NeighborSolution& BestNeighborSolution)
     attribute[CustomerOneId][PathOneId].SetTabuStatus(TabuMemoryLength);
     if(CustomerTwoId != -1){
         attribute[CustomerTwoId][PathTwoId].SetTabuStatus(TabuMemoryLength);
+    }
+
+    //the 2-opt operator
+    if(LocalSearchRule == 3){
+        for(int i=0; i<CustomerCount; ++i){
+            for(int j=0; j<CustomerCount; ++j){
+                if(ArcAttribute[i][j].TabuStatus()>0){
+                    ArcAttribute[i][j].SetTabuStatus(ArcAttribute[i][j].TabuStatus()-1);
+                }
+            }
+        }
+        ArcAttribute[CustomerOneId][CustomerOneDescId].SetTabuStatus(TabuMemoryLength);
+        ArcAttribute[CustomerTwoId][CustomerTwoDescId].SetTabuStatus(TabuMemoryLength);
     }
 }
 
@@ -731,6 +739,18 @@ void TabuSearch::DataInitialization(std::string FilePath)
             attribute[i][j] = tabuAttribute;
         }
     }
+    //set up the arc attribute array
+    ArcAttribute = new TabuArcAttribute* [CustomerCount];
+    for(int i=0; i<CustomerCount; ++i){
+        ArcAttribute[i] = new TabuArcAttribute[CustomerCount];
+    }
+    for(int i=0; i<CustomerCount; ++i){
+        for(int j=0; j<CustomerCount; ++j){
+            TabuArcAttribute tabuArcAttribute(i,j);
+            ArcAttribute[i][j] = tabuArcAttribute;
+        }
+    }
+
     //dispaly the initial attribute data
 
     for(int i=0; i<CustomerCount; i++){
@@ -740,8 +760,6 @@ void TabuSearch::DataInitialization(std::string FilePath)
                  << " " << attribute[i][j].TabuStatus() << endl;
         }
     }
-
-
 }
 
 
@@ -883,6 +901,11 @@ void TabuSearch::CleanUp()
         delete [] attribute[i];
     }
     delete [] attribute;
+
+    for(int i=0; i<CustomerCoun; ++i){
+        delete [] ArcAttribute[i];
+    }
+    delete [] ArcAttribute;
 }
 
 

@@ -147,7 +147,7 @@ void LocalSearch::relocate(Solution CurrentSolution,Depot DepotStart, double Bes
                     NewPathList.push_back(& *it);
 
                     NeighborSolution NewNeighbor (NewPathList, DriveDistance, CapacityViolation, DurationViolation,
-                                   TimeWindowViolation, NewPathOut.id(), CustomerOut.id, NewPathIn.id(), -1, true);
+                                   TimeWindowViolation, NewPathOut.id(), CustomerOut.id ,NewPathIn.id(), -1, true);
                     //NeighborSolution NewNeighbor (NewPathList, NewPathOut.id(), NewPathIn.id(), CustomerOut.id, false);
                     //NewNeighbor.UpdateViolationValues(CurrentSolution,PathOut,PathIn,NewPathOut,NewPathIn);
                     NewNeighbor.GetObjectiveValue(alpha, beta, gamma);
@@ -320,8 +320,16 @@ void LocalSearch::TwoOptAsterisk(Solution CurrentSolution, Depot DepotStart, dou
                         NewPathListCopy.push_back(& *it);
                         --it;
                         NewPathListCopy.push_back(& *it);
-                        NeighborSolution NewNeighbor(NewPathListCopy, PathOne.id(),CustomerListOne[m].id,
-                                                     PathTwo.id(), CustomerListTwo[n].id, false);
+                        int CustomerOneId, CustomerOneDescId, CustomerTwoId, CustomerTwoDescId;
+                        CustomerOneId = Segment2[0].id;
+                        if(Segment2.size() == 1){CustomerOneDescId = CustomerOneId;}
+                        else{CustomerOneDescId = Segment2[1].id;}
+                        CustomerTwoId = Segment4[0].id;
+                        if(Segment4.size() == 1){CustomerTwoDescId = CustomerTwoId;}
+                        else{CustomerTwoDescId = Segment4[1].id;}
+
+                        NeighborSolution NewNeighbor(NewPathListCopy, PathOne.id(),CustomerOneId, CustomerOneDescId,
+                                                     PathTwo.id(), CustomerTwoId, CustomerTwoDescId ,false);
                         NewNeighbor.GetObjectiveValue(alpha, beta, gamma);
                         AllNeighbors.push_back(NewNeighbor);
                     }

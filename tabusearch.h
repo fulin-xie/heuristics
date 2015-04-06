@@ -2,6 +2,7 @@
 #define TABUSEARCH_H
 #include "dataClass.h"
 #include "tabuAttribute.h"
+#include "tabuArcAttribute.h"
 #include <string>
 
 class TabuSearch
@@ -54,6 +55,7 @@ private:
 
     void RunTabuSearch(int IterationNum);
     TabuAttribute** attribute ;
+    TabuArcAttribute** ArcAttribute;
     void UpdateParameters(Solution& CurrentSolution);
     double GetPenalty(double cost, int MoveFrequency); // the penalty is used for the diversification
     void CleanUp();

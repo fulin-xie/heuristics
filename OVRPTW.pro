@@ -14,5 +14,6 @@ HEADERS += \
     dataClass.h \
     tabusearch.h \
     tabuAttribute.h \
-    localSearch.h
+    localSearch.h \
+    tabuArcAttribute.h
 

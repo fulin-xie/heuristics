@@ -320,7 +320,8 @@ void LocalSearch::TwoOptAsterisk(Solution CurrentSolution, Depot DepotStart, dou
                         NewPathListCopy.push_back(& *it);
                         --it;
                         NewPathListCopy.push_back(& *it);
-                        NeighborSolution NewNeighbor(NewPathListCopy, PathOne.id(),0,PathTwo.id(), 0, false);
+                        NeighborSolution NewNeighbor(NewPathListCopy, PathOne.id(),CustomerListOne[m].id,
+                                                     PathTwo.id(), CustomerListTwo[n].id, false);
                         NewNeighbor.GetObjectiveValue(alpha, beta, gamma);
                         AllNeighbors.push_back(NewNeighbor);
                     }

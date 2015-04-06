@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <iomanip>
 #include <time.h>
 
 #include "tabusearch.h"
@@ -18,11 +19,11 @@ double TabuSearch::epsilon = 0.00001;
 TabuSearch::TabuSearch()
 {
     //this->FilePath = "/Users/fulin/Documents/PhD/C++/OVRPTW/Instances2.txt";
-    this->FilePath = "/Users/fulin/Documents/PhD/C++/TabuSearch/heuristics//InstancesR105.txt";
-    //this->FilePath = "C:/C++/VRPTW//heuristics/InstancesR106.txt";
+    //this->FilePath = "/Users/fulin/Documents/PhD/C++/TabuSearch/heuristics//InstancesR106.txt";
+    this->FilePath = "C:/C++/VRPTW//heuristics/InstancesR101.txt";
     //configurations
-    this->VehicleCount = 14;
-    this->MaxIterNum = 50000; // maximum number of iterations
+    this->VehicleCount = 19;
+    this->MaxIterNum = 1000; // maximum number of iterations
     this->MaxConsIterNum = 500000; // maximum number of consecutive iterations without improvement to the best solution
     this->TabuMemoryLength = 30;
     this->delta = 0.5; // factor used to modify the three parameters above
@@ -131,9 +132,10 @@ void TabuSearch::RunTabuSearch(int MaxIterNum)
     while((IterNum < MaxIterNum) && (ConsIterNum < MaxConsIterNum)){
         //generate all neighbor solutions
         IterNum = IterNum + 1;
+        /* randomly select a tabu length
         srand(time(0));
         TabuMemoryLength = rand() % 30; //generate a random number in the rand 0 and 99, it determines the first selected cust
-
+        */
         /*
         if(IterNumNoImprove >= 100){
             ++ LocalSearchRule; // use another local search rule
@@ -244,7 +246,9 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
         }
 
         if(LocalSearchRule == 3){
-            cout << "TailExchange" << "Iteration" << IterNum << endl;
+            cout << "TailExchange" << " Iteration: " << IterNum <<
+                 " CustomerOneId: "<< BestNeighborSolution.CustomerOneId()<<
+                 " CustomerTwoId: " << BestNeighborSolution.CustomerTwoId() <<endl;
             goto TailExchange;
         }
 
@@ -281,9 +285,6 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
                     int fre1= NeighborFrequency;
                     totalObj1 = totalObj1;
                 }
-
-
-
 
                 if((MinObjValue-TotalObjValue)>epsilon){
                     BestNeighborSolution = NeighborSolutions[i];
@@ -323,7 +324,8 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
 
     cout << CustomerOneId << " && " << PathOneId << " && " << PathTwoId <<
                         "  Iteration: " << IterNum << "  Frequency:  " << CurrentFrequency
-         << " Objective value: " << BestNeighborSolution.ObjectiveValue() << " Penalty : " << Penalty << endl;
+         << " Objective value: " << BestNeighborSolution.ObjectiveValue() << " Cost: " <<
+         BestNeighborSolution.TotalDriveDistance() << " Penalty : " << Penalty << endl;
     }
 TailExchange:
     Path PathOne = *BestNeighborSolution.PathList()[BestNeighborSolution.PathList().size()-1];
@@ -476,12 +478,11 @@ void TabuSearch :: UpdateParameters(Solution& CurrentSolution)
     }
 }
 
-
 void TabuSearch::GetInitialSolution()
 {
     srand(time(0));
     //int i = rand() % 100; //generate a random number in the rand 0 and 99, it determines the first selected customer
-    int i = 20;
+    int i = 0;
     RandomNum = i;
     int NumOfInsertion = 0; // the number of customers have been inserted to vehicles' route
     int PathCount = 0;
@@ -633,7 +634,20 @@ void TabuSearch::SortCustomers()
 }
 
 bool TabuSearch::DataSortPredicate(const Customer& c1, const Customer& c2){
-    return c1.angle < c2.angle;
+    bool c1IsFront = false;
+    if(c2.angle - c1.angle > epsilon){
+        c1IsFront = true;
+    }
+    else if(c2.angle == c1.angle){ // these two customers have the same angle
+        if(c1.id < c2.id){
+            c1IsFront = true;
+        }
+    }
+    else{
+        c1IsFront = false;
+    }
+
+    return c1IsFront;
 }
 
 void TabuSearch::DisplayCustomerData()
@@ -645,7 +659,7 @@ void TabuSearch::DisplayCustomerData()
     }*/
 
     for(int i=0; i<(int)CustomersSorted.size(); i++){ //the customer Id start from 1
-        cout << "ID:  "<< (CustomersSorted[i].ExternalId - 1) << "   Angle:  " << CustomersSorted[i].angle << endl;
+        cout << "ID:  "<< (CustomersSorted[i].ExternalId - 1) << "   Angle:  " << setprecision(25) << CustomersSorted[i].angle << endl;
     }
 }
 
@@ -718,7 +732,7 @@ void TabuSearch::DataInitialization(std::string FilePath)
         }
     }
     //dispaly the initial attribute data
-    /*
+
     for(int i=0; i<CustomerCount; i++){
         for(int j=0; j<VehicleCount; j++){
             cout << "attribute: " << i << " & " << j << "  :"<< attribute[i][j].CustomerId()
@@ -726,7 +740,7 @@ void TabuSearch::DataInitialization(std::string FilePath)
                  << " " << attribute[i][j].TabuStatus() << endl;
         }
     }
-    */
+
 
 }
 

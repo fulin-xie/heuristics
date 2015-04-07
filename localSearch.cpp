@@ -142,9 +142,11 @@ void LocalSearch::relocate(Solution CurrentSolution,Depot DepotStart, double Bes
                     TemPathList.push_back(NewPathIn);
                     list<Path>::iterator it = TemPathList.end();
                     --it;
-                    NewPathList.push_back(& *it);
+                    Path* PathOnePointer = & *it;
+                    NewPathList.push_back(PathOnePointer);
                     --it;
-                    NewPathList.push_back(& *it);
+                    Path* PathTwoPointer = & *it;
+                    NewPathList.push_back(PathTwoPointer);
 
                     NeighborSolution NewNeighbor (NewPathList, DriveDistance, CapacityViolation, DurationViolation,
                                    TimeWindowViolation, NewPathOut.id(), CustomerOut.id ,NewPathIn.id(), -1, true);

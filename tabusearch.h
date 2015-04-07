@@ -61,8 +61,11 @@ private:
     void CleanUp();
     void VerifyDistanceCal();
     void GetInitialAspirationLevel(Solution& solution);
-
+    void Diversification(std::vector<NeighborSolution>& NeighborSolutions, NeighborSolution& BestNeighborSolution,
+                         int& BestSolutionPosition);
     void FindBestInitial();
+    void ResetAttribute(); // reset the tabu status to 0
+    void ResetArcAttribute();
 public:
     TabuSearch();
     void DisplayCustomerData();

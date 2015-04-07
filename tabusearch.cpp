@@ -19,14 +19,14 @@ double TabuSearch::epsilon = 0.00001;
 TabuSearch::TabuSearch()
 {
     //this->FilePath = "/Users/fulin/Documents/PhD/C++/OVRPTW/Instances2.txt";
-    this->FilePath = "/Users/fulin/Documents/PhD/C++/TabuSearch/heuristics//InstancesR101.txt";
-    //this->FilePath = "C:/C++/VRPTW//heuristics/InstancesR102.txt";
+    //this->FilePath = "/Users/fulin/Documents/PhD/C++/TabuSearch/heuristics//InstancesR101.txt";
+    this->FilePath = "C:/C++/VRPTW//heuristics/InstancesR102.txt";
     //configurations
-    this->VehicleCount = 19;
+    this->VehicleCount = 17;
     this->MaxIterNum = 50000; // maximum number of iterations
     this->MaxConsIterNum = 500000; // maximum number of consecutive iterations without improvement to the best solution
-    this->TabuMemoryLength = 30;
-    this->delta = 0.5; // factor used to modify the three parameters above
+    this->TabuMemoryLength = 15;
+    this->delta = 0.1; // factor used to modify the three parameters above
     this->lambda = 0.015; //factor used to control the intensity of the diversification
 
     //other variables
@@ -145,9 +145,10 @@ void TabuSearch::RunTabuSearch(int MaxIterNum)
             }
         }
         */
-
+        /*
         if((IterNumNoImprove >= 100) && LocalSearchRule==3){
             LocalSearchRule = 1;
+            ResetAttribute();
             IterNumNoImprove = 0;
         }
         if(IterNumNoImprove >= 100){
@@ -155,7 +156,7 @@ void TabuSearch::RunTabuSearch(int MaxIterNum)
             IterNumNoImprove = 0;
             //CurrentSolution = BestSolution;
         }
-
+        */
         GetAllNeighborSolutions(CurrentSolution); // call the local search function to get neighborhood solutions
         NeighborSolution BestNeighborSolution = BestNeighbor(LocalSearch::AllNeighbors, CurrentSolution);
        // DisplayNeighborSolution(LocalSearch::AllNeighbors);
@@ -246,46 +247,16 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
         }
 
         if(LocalSearchRule == 3){
-            cout << "TailExchange" << " Iteration: " << IterNum <<
-                 " CustomerOneId: "<< BestNeighborSolution.CustomerOneId()<<
-                 " CustomerTwoId: " << BestNeighborSolution.CustomerTwoId() <<endl;
             goto TailExchange;
         }
 
         //diversification process; if the objective value of best neighbor solution is
         // higher than the current solution, then check the penalty, the objectice function is minimize
         if((BestNeighborSolution.ObjectiveValue()-CurrentSolution.ObjectiveValue()) > epsilon){
-            // loop again, find the one with minimal objective function plus penalty
-            BestSolutionPosition = 0;
-            MinObjValue = 1000000000; // initialise with a huge value
-            for(int i=0; i<(int)NeighborSolutions.size(); i++){
-                double TotalDriveDistance = NeighborSolutions[i].TotalDriveDistance();
-                CustomerOneId = NeighborSolutions[i].CustomerOneId();
-                PathTwoId = NeighborSolutions[i].PathTwoId();
-                PathOneId = NeighborSolutions[i].PathOneId();
-
-                //int NeighborFrequency = GetFrequency(NeighborSolutions[i], false)-1;
-                int NeighborFrequency = attribute[CustomerOneId][PathTwoId].VisitedTimes();
-
-                double TotalObjValue = NeighborSolutions[i].ObjectiveValue()
-                    + GetPenalty(TotalDriveDistance, NeighborFrequency);
-                Penalty = GetPenalty(TotalDriveDistance, NeighborFrequency);
-                if(CustomerOneId == 51 && PathOneId == 0
-                        && PathTwoId == 10){
-                    double totalObj1 = TotalObjValue;
-                    int fre1= NeighborFrequency;
-                    totalObj1 = totalObj1;
-                }
-
-                if((MinObjValue-TotalObjValue)>epsilon){
-                    BestNeighborSolution = NeighborSolutions[i];
-                    //MinObjValue = BestNeighborSolution.ObjectiveValue();
-                    MinObjValue=TotalObjValue;
-                    BestSolutionPosition = i;
-                }
-            }
+            Diversification(NeighborSolutions, BestNeighborSolution, BestSolutionPosition);
         }
 
+        TailExchange:
         //get the move indicators from the best neighbor solution
         CustomerOneId = BestNeighborSolution.CustomerOneId();
         PathOneId = BestNeighborSolution.PathOneId();
@@ -300,25 +271,32 @@ NeighborSolution TabuSearch::BestNeighbor(vector<NeighborSolution>& NeighborSolu
         else{BestNonTabuNeighborFound = true;}
     }
     {
-    //update the tabu list, and the frequency map
-    UpdateTabuList(BestNeighborSolution);
-    //call function to update the current frequency
-    CurrentFrequency = GetFrequency(BestNeighborSolution, true);
+        //update the tabu list, and the frequency map
+        UpdateTabuList(BestNeighborSolution);
 
-    cout << CustomerOneId << " && " << PathOneId << " && " << PathTwoId <<
-                        "  Iteration: " << IterNum << "  Frequency:  " << CurrentFrequency
-         << " Objective value: " << BestNeighborSolution.ObjectiveValue() << " Cost: " <<
-         BestNeighborSolution.TotalDriveDistance() << " Penalty : " << Penalty << endl;
+        if(LocalSearchRule==1 || LocalSearchRule==2){
+            //call function to update the current frequency
+            CurrentFrequency = GetFrequency(BestNeighborSolution, true);
+
+            cout << CustomerOneId << " && " << PathOneId << " && " << PathTwoId <<
+                            "  Iteration: " << IterNum << "  Frequency:  " << CurrentFrequency
+                << "  Objective value:  " << BestNeighborSolution.ObjectiveValue() << " Penalty : " << Penalty << endl;
+        }
+        if(LocalSearchRule == 3){
+            cout << "TailExchange" << " Iteration: " << IterNum <<
+                 " CustomerOneId: "<< BestNeighborSolution.CustomerOneId()<<
+                 " CustomerTwoId: " << BestNeighborSolution.CustomerTwoId() <<endl;
+        }
     }
-TailExchange:
-    Path PathOne = *BestNeighborSolution.PathList()[BestNeighborSolution.PathList().size()-1];
-    Path PathTwo = *BestNeighborSolution.PathList()[BestNeighborSolution.PathList().size()-2];
 
+    Path PathOne = *BestNeighborSolution.PathList()[BestNeighborSolution.NumOfPaths()-1];
+    Path PathTwo = *BestNeighborSolution.PathList()[BestNeighborSolution.NumOfPaths()-2];
+    //insert the two new created paths into the AllPathList
     LocalSearch::AllPathList.push_back(PathOne);
     LocalSearch::AllPathList.push_back(PathTwo);
-    vector<Path*> PathPointerList = BestNeighborSolution.PathList();
     list<Path>::iterator it = LocalSearch::AllPathList.end();
-
+    // Note PathList is a private member, can not access outside of the class
+    vector<Path*> PathPointerList = BestNeighborSolution.PathList();
     PathPointerList.pop_back();
     PathPointerList.pop_back();
 
@@ -331,6 +309,32 @@ TailExchange:
     return BestNeighborSolution;
 }
 
+//if find the neighbor solution with the minimal (objective fucntion plus penalty)
+void TabuSearch::Diversification(std::vector<NeighborSolution> &NeighborSolutions,
+                                 NeighborSolution &BestNeighborSolution,
+                                 int &BestSolutionPosition){
+    // loop again, find the one with minimal objective function plus penalty
+    BestSolutionPosition = 0;
+    double MinObjValue = 1000000000; // initialise with a huge value
+    for(int i=0; i<(int)NeighborSolutions.size(); i++){
+        double TotalDriveDistance = NeighborSolutions[i].TotalDriveDistance();
+        int CustomerOneId = NeighborSolutions[i].CustomerOneId();
+        int PathTwoId = NeighborSolutions[i].PathTwoId();
+
+        //int NeighborFrequency = GetFrequency(NeighborSolutions[i], false)-1;
+        int NeighborFrequency = attribute[CustomerOneId][PathTwoId].VisitedTimes();
+
+        double TotalObjValue = NeighborSolutions[i].ObjectiveValue()
+            + GetPenalty(TotalDriveDistance, NeighborFrequency);
+
+        if((MinObjValue-TotalObjValue)>epsilon){
+            BestNeighborSolution = NeighborSolutions[i];
+            //MinObjValue = BestNeighborSolution.ObjectiveValue();
+            MinObjValue=TotalObjValue;
+            BestSolutionPosition = i;
+        }
+    }
+}
 
 bool TabuSearch::AcceptNeighbor(NeighborSolution& BestNeighborSolution)
 {
@@ -446,6 +450,23 @@ void TabuSearch::UpdateTabuList(NeighborSolution& BestNeighborSolution)
     }
 }
 
+void TabuSearch::ResetAttribute()
+{
+    for(int i=0; i<CustomerCount; ++i){
+        for(int j=0; j<VehicleCount; ++j){
+            attribute[i][j].SetTabuStatus(0);
+        }
+    }
+}
+
+void TabuSearch::ResetArcAttribute()
+{
+    for(int i=0; i<CustomerCount; ++i){
+        for(int j=0; j<CustomerCount; ++j){
+            ArcAttribute[i][j].SetTabuStatus(0);
+        }
+    }
+}
 
 void TabuSearch :: UpdateParameters(Solution& CurrentSolution)
 {
@@ -752,7 +773,7 @@ void TabuSearch::DataInitialization(std::string FilePath)
     }
 
     //dispaly the initial attribute data
-
+    /*
     for(int i=0; i<CustomerCount; i++){
         for(int j=0; j<VehicleCount; j++){
             cout << "attribute: " << i << " & " << j << "  :"<< attribute[i][j].CustomerId()
@@ -760,6 +781,7 @@ void TabuSearch::DataInitialization(std::string FilePath)
                  << " " << attribute[i][j].TabuStatus() << endl;
         }
     }
+    */
 }
 
 
@@ -902,10 +924,15 @@ void TabuSearch::CleanUp()
     }
     delete [] attribute;
 
-    for(int i=0; i<CustomerCoun; ++i){
+    for(int i=0; i<CustomerCount; ++i){
         delete [] ArcAttribute[i];
     }
     delete [] ArcAttribute;
+
+    delete DepotStart;
+
+    LocalSearch::AllNeighbors.clear();
+    LocalSearch::AllPathList.clear();
 }
 
 
